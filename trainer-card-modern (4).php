@@ -1,9 +1,10 @@
 <?php
 /**
- * Template carte formateur moderne avec nom anonymisé et régions
+ * Template carte formateur moderne avec nom anonymisé et régions - VERSION CORRIGÉE NONCE
  * 
  * Fichier: public/partials/trainer-card-modern.php
  * Variable disponible: $trainer (objet avec les données du formateur)
+ * ✅ CORRECTION: Nonce unifié pour système de contact
  */
 
 if (!defined('ABSPATH')) {
@@ -413,9 +414,17 @@ $specialty_icons = [
             <?php endif; ?>
             
             <div class="trpro-modal-actions">
+                <!-- ✅ CORRECTION: Bouton contact modal avec données pour nonce unifié -->
+                <button class="trpro-btn trpro-btn-primary trpro-btn-large trpro-btn-contact-modal" 
+                        data-trainer-id="<?php echo esc_attr($trainer->id); ?>" 
+                        data-trainer-name="<?php echo esc_attr($display_name); ?>">
+                    <i class="fas fa-envelope"></i>
+                    Contacter par formulaire
+                </button>
+                
                 <?php if (!empty($contact_email)): ?>
                     <a href="mailto:<?php echo esc_attr($contact_email); ?>?subject=Contact formateur %23<?php echo $trainer_id_formatted; ?>" 
-                       class="trpro-btn trpro-btn-primary trpro-btn-large">
+                       class="trpro-btn trpro-btn-outline trpro-btn-large">
                         <i class="fas fa-envelope"></i>
                         Contacter par Email
                     </a>
@@ -601,6 +610,16 @@ $specialty_icons = [
     font-weight: 500;
 }
 
+/* ✅ Styles pour bouton contact modal */
+.trpro-btn-contact-modal {
+    transition: all 0.2s ease;
+}
+
+.trpro-btn-contact-modal:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
 /* Responsive pour les nouvelles fonctionnalités */
 @media (max-width: 768px) {
     .trpro-intervention-zones {
@@ -669,7 +688,7 @@ $specialty_icons = [
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ===== GESTION DES MODALS DE PROFIL =====
+    // ===== GESTION DES MODALS DE PROFIL AVEC NONCE CORRIGÉ =====
     const profileButtons = document.querySelectorAll('.trpro-btn-profile');
     const modalCloses = document.querySelectorAll('.trpro-modal-close');
     const modalOverlays = document.querySelectorAll('.trpro-modal-overlay');
@@ -740,6 +759,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeButton.click();
                 }
             }
+        }
+    });
+
+    // ✅ CORRECTION: Gestionnaire bouton contact modal avec nonce unifié
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.trpro-btn-contact-modal')) {
+            e.preventDefault();
+            const button = e.target.closest('.trpro-btn-contact-modal');
+            const trainerId = button.dataset.trainerId;
+            const trainerName = button.dataset.trainerName;
+            
+            console.log('🎯 Contact modal clicked:', {trainerId, trainerName});
+            
+            // Fermer la modal actuelle
+            const activeModal = document.querySelector('.trpro-modal-overlay.active');
+            if (activeModal) {
+                activeModal.classList.remove('active');
+                setTimeout(() => {
+                    activeModal.style.display = 'none';
+                }, 300);
+            }
+            
+            // Ouvrir la modal de contact (utilise le nonce unifié dans le JS principal)
+            setTimeout(() => {
+                if (typeof window.openContactModal === 'function') {
+                    window.openContactModal(trainerId, trainerName);
+                } else {
+                    console.warn('⚠️ openContactModal function not available');
+                }
+            }, 350);
         }
     });
 
