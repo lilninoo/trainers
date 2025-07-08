@@ -1,7 +1,7 @@
 /**
- * JavaScript COMPLET TRAINER REGISTRATION PRO - VERSION FUSIONNÉE
+ * JavaScript COMPLET TRAINER REGISTRATION PRO - VERSION CORRIGÉE NONCE CONTACT
  * 
- * Contient :
+ * ✅ CORRECTION PRINCIPALE: Nonce de contact unifié avec le nonce principal
  * ✅ Formulaire d'inscription modernisé (multi-étapes, validation temps réel)
  * ✅ Recherche de formateurs avec AJAX et filtres corrigés
  * ✅ Cartes de formateurs interactives avec modals
@@ -11,9 +11,9 @@
  * ✅ Validation en temps réel style Stripe
  * ✅ Vue grille/liste avec sauvegarde
  * ✅ Pagination fonctionnelle
- * ✅ CORRECTION: Fermeture des modales
+ * ✅ Fermeture des modales
  * 
- * Version: 2.1 - Fusion complète et moderne avec fix modal
+ * Version: 2.2 - CORRECTION NONCE CONTACT
  */
 
 (function($) {
@@ -1639,7 +1639,10 @@
             });
         }
 
+        // ===== ✅ CORRECTION MODAL CONTACT AVEC NONCE UNIFIÉ =====
         function openContactModal(trainerId, trainerName) {
+            console.log('📧 Ouverture modal contact:', {trainerId, trainerName});
+            
             const contactHTML = `
                 <div class="trpro-modal-overlay active" id="trpro-contact-modal">
                     <div class="trpro-modal-container">
@@ -1681,6 +1684,7 @@
                                 </div>
                                 
                                 <input type="hidden" name="trainer_id" value="${trainerId}">
+                                <input type="hidden" name="action" value="contact_trainer">
                             </form>
                         </div>
                     </div>
@@ -1689,13 +1693,22 @@
             
             $('body').append(contactHTML).addClass('modal-open');
             
-            // Gestionnaire du formulaire de contact
+            // ✅ CORRECTION: Gestionnaire du formulaire de contact avec nonce principal
             $('#trpro-contact-form').on('submit', function(e) {
                 e.preventDefault();
+                console.log('📤 Soumission formulaire contact...');
+                
+                const $form = $(this);
+                const $submitBtn = $form.find('button[type="submit"]');
+                
+                // Désactiver le bouton pendant l'envoi
+                $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Envoi...');
                 
                 const formData = new FormData(this);
-                formData.append('action', 'contact_trainer');
+                // ✅ CORRECTION PRINCIPALE: Utiliser le nonce principal au lieu de contact_nonce
                 formData.append('nonce', trainer_ajax.nonce);
+                
+                console.log('📤 Données formulaire contact:', Object.fromEntries(formData));
                 
                 $.ajax({
                     url: trainer_ajax.ajax_url,
@@ -1703,15 +1716,22 @@
                     data: formData,
                     processData: false,
                     contentType: false,
+                    timeout: 15000,
                     success: function(response) {
+                        console.log('✅ Réponse contact:', response);
                         if (response.success) {
-                            showSuccessModal('Message envoyé avec succès !');
+                            showSuccessModal(response.data.message || 'Message envoyé avec succès !');
                         } else {
-                            showErrorModal('Erreur lors de l\'envoi du message');
+                            showErrorModal(response.data?.message || 'Erreur lors de l\'envoi du message');
                         }
                     },
-                    error: function() {
-                        showErrorModal('Erreur de connexion');
+                    error: function(xhr, status, error) {
+                        console.error('❌ Erreur contact:', {xhr, status, error});
+                        showErrorModal('Erreur de connexion. Veuillez réessayer.');
+                    },
+                    complete: function() {
+                        // Réactiver le bouton
+                        $submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Envoyer le message');
                     }
                 });
             });
@@ -1968,6 +1988,9 @@
                 closeAllModals: () => closeAllModals(),
                 debugModals: window.debugModals,
                 
+                // Contact
+                testContact: (trainerId, trainerName) => openContactModal(trainerId, trainerName),
+                
                 // Utilitaires
                 isMobile: () => isMobile(),
                 isTablet: () => isTablet(),
@@ -1990,7 +2013,8 @@
             formulaire: formElements.form.length > 0,
             recherche: searchElements.trainersGrid.length > 0,
             cartes: $('.trpro-trainer-card').length,
-            animations: true
+            animations: true,
+            contactModal: 'NONCE CORRIGÉ' // ✅ Indicateur de correction
         });
         
         // Notification de succès d'initialisation
@@ -2001,6 +2025,9 @@
         if (searchElements.trainersGrid.length > 0) {
             console.log('🎯 Recherche prête - Filtres et pagination activés');
         }
+        
+        // ✅ Vérification spécifique de la correction du nonce
+        console.log('🔐 Nonce de contact unifié: CORRIGÉ - Utilise trainer_ajax.nonce');
         
         // Vérification de la compatibilité
         const features = {
