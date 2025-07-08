@@ -1,10 +1,10 @@
 /**
- * JavaScript COMPLET TRAINER REGISTRATION PRO - VERSION CORRIGÉE NONCE CONTACT
+ * JavaScript COMPLET TRAINER REGISTRATION PRO - VERSION AFFICHAGE UNIFORME
  * 
- * ✅ CORRECTION PRINCIPALE: Nonce de contact unifié avec le nonce principal
+ * ✅ CORRECTION PRINCIPALE: Affichage uniforme entre recherche AJAX et template statique
  * ✅ Formulaire d'inscription modernisé (multi-étapes, validation temps réel)
  * ✅ Recherche de formateurs avec AJAX et filtres corrigés
- * ✅ Cartes de formateurs interactives avec modals
+ * ✅ Cartes de formateurs uniformes (même style pour tous les cas)
  * ✅ Upload de fichiers avec drag & drop
  * ✅ Animations et UX optimisées
  * ✅ Système d'erreurs avancé avec scroll automatique
@@ -13,7 +13,7 @@
  * ✅ Pagination fonctionnelle
  * ✅ Fermeture des modales
  * 
- * Version: 2.2 - CORRECTION NONCE CONTACT
+ * Version: 2.3 - AFFICHAGE UNIFORME
  */
 
 (function($) {
@@ -117,7 +117,7 @@
             initTrainerCards();
             initPopularTags();
             loadInitialView();
-            console.log('✅ Recherche et liste initialisées');
+            console.log('✅ Recherche et liste initialisées - AFFICHAGE UNIFORME');
         }
 
         // Animations générales
@@ -1080,7 +1080,7 @@
             }
         }
 
-        // ========== PARTIE 2: RECHERCHE ET LISTE DE FORMATEURS ==========
+        // ========== PARTIE 2: RECHERCHE ET LISTE DE FORMATEURS - AFFICHAGE UNIFORME ==========
         
         // ===== SYSTÈME VUE GRILLE/LISTE CORRIGÉ =====
         function initViewSwitcher() {
@@ -1167,7 +1167,7 @@
             }, 50);
         }
 
-        // ===== SYSTÈME DE RECHERCHE CORRIGÉ =====
+        // ===== SYSTÈME DE RECHERCHE CORRIGÉ POUR AFFICHAGE UNIFORME =====
         function initSearch() {
             console.log('🔧 Init recherche...');
             
@@ -1252,18 +1252,18 @@
             performSearch();
         }
 
-        // ===== RECHERCHE AJAX CORRIGÉE =====
+        // ===== ✅ RECHERCHE AJAX CORRIGÉE POUR AFFICHAGE UNIFORME =====
         function performSearch() {
-            console.log('🔍 Exécution recherche...');
+            console.log('🔍 Exécution recherche avec affichage uniforme...');
             
             // Annuler requête précédente
             if (CONFIG.search.currentRequest) {
                 CONFIG.search.currentRequest.abort();
             }
             
-            // Inclure TOUS les filtres
+            // ✅ CORRECTION: Utiliser le nouveau handler unifié
             const searchData = {
-                action: 'search_trainers',
+                action: 'search_trainers', // Utilise le handler unifié
                 nonce: trainer_ajax.nonce,
                 search_term: searchElements.searchInput.val().trim(),
                 specialty_filter: searchElements.specialtyFilter.val() || '',
@@ -1274,7 +1274,7 @@
                 page: CONFIG.pagination.currentPage
             };
             
-            console.log('📤 Données recherche:', searchData);
+            console.log('📤 Données recherche (UNIFORME):', searchData);
             
             showSearchLoading();
             
@@ -1284,7 +1284,7 @@
                 data: searchData,
                 timeout: 15000,
                 success: function(response) {
-                    console.log('📥 Réponse:', response);
+                    console.log('📥 Réponse UNIFORME:', response);
                     handleSearchSuccess(response);
                 },
                 error: function(xhr, status, error) {
@@ -1303,6 +1303,8 @@
         function handleSearchSuccess(response) {
             if (response.success && response.data) {
                 const data = response.data;
+                
+                console.log('✅ Affichage des résultats avec style uniforme');
                 
                 if (data.total > 0) {
                     displayResults(data);
@@ -1335,12 +1337,14 @@
             if (data.html) {
                 searchElements.trainersGrid.fadeOut(200, function() {
                     $(this).html(data.html).fadeIn(300, function() {
-                        // Réappliquer la vue actuelle
+                        // ✅ CORRECTION: Réappliquer la vue actuelle après affichage uniforme
                         $(this).removeClass('trpro-view-grid trpro-view-list')
                               .addClass(`trpro-view-${CONFIG.view.current}`);
                         
                         setTimeout(adjustCardsAlignment, 100);
                         initTrainerCards(); // Réinitialiser les événements des cartes
+                        
+                        console.log('✅ Affichage uniforme appliqué - Vue:', CONFIG.view.current);
                     });
                 });
             }
@@ -1437,12 +1441,17 @@
                 }
             });
             
-            // Boutons contact
+            // ✅ CORRECTION: Boutons contact avec nonce unifié
             $(document).off('click', '.trpro-btn-contact').on('click', '.trpro-btn-contact', function(e) {
                 e.preventDefault();
                 const trainerId = $(this).data('trainer-id');
                 const trainerName = $(this).data('trainer-name');
-                openContactModal(trainerId, trainerName);
+                
+                console.log('📧 Contact depuis affichage uniforme:', {trainerId, trainerName});
+                
+                if (trainerId && trainerName) {
+                    openContactModal(trainerId, trainerName);
+                }
             });
             
             // ===== GESTIONNAIRE DE FERMETURE UNIFIÉ =====
@@ -1470,7 +1479,7 @@
                 }
             });
             
-            console.log('✅ Cartes formateurs initialisées');
+            console.log('✅ Cartes formateurs initialisées - AFFICHAGE UNIFORME');
         }
 
         // ===== NOUVELLE FONCTION DE FERMETURE UNIFIÉE =====
@@ -1639,9 +1648,9 @@
             });
         }
 
-        // ===== ✅ CORRECTION MODAL CONTACT AVEC NONCE UNIFIÉ =====
+        // ===== ✅ MODAL CONTACT AVEC NONCE UNIFIÉ =====
         function openContactModal(trainerId, trainerName) {
-            console.log('📧 Ouverture modal contact:', {trainerId, trainerName});
+            console.log('📧 Ouverture modal contact (UNIFORME):', {trainerId, trainerName});
             
             const contactHTML = `
                 <div class="trpro-modal-overlay active" id="trpro-contact-modal">
@@ -1696,7 +1705,7 @@
             // ✅ CORRECTION: Gestionnaire du formulaire de contact avec nonce principal
             $('#trpro-contact-form').on('submit', function(e) {
                 e.preventDefault();
-                console.log('📤 Soumission formulaire contact...');
+                console.log('📤 Soumission formulaire contact (UNIFORME)...');
                 
                 const $form = $(this);
                 const $submitBtn = $form.find('button[type="submit"]');
@@ -1708,7 +1717,7 @@
                 // ✅ CORRECTION PRINCIPALE: Utiliser le nonce principal au lieu de contact_nonce
                 formData.append('nonce', trainer_ajax.nonce);
                 
-                console.log('📤 Données formulaire contact:', Object.fromEntries(formData));
+                console.log('📤 Données formulaire contact (UNIFORME):', Object.fromEntries(formData));
                 
                 $.ajax({
                     url: trainer_ajax.ajax_url,
@@ -1718,7 +1727,7 @@
                     contentType: false,
                     timeout: 15000,
                     success: function(response) {
-                        console.log('✅ Réponse contact:', response);
+                        console.log('✅ Réponse contact (UNIFORME):', response);
                         if (response.success) {
                             showSuccessModal(response.data.message || 'Message envoyé avec succès !');
                         } else {
@@ -1726,7 +1735,7 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('❌ Erreur contact:', {xhr, status, error});
+                        console.error('❌ Erreur contact (UNIFORME):', {xhr, status, error});
                         showErrorModal('Erreur de connexion. Veuillez réessayer.');
                     },
                     complete: function() {
@@ -1736,6 +1745,9 @@
                 });
             });
         }
+
+        // ===== EXPOSITION GLOBALE DE LA FONCTION CONTACT =====
+        window.openContactModal = openContactModal;
 
         function showSuccessModal(message) {
             closeModal();
@@ -1975,7 +1987,7 @@
                 },
                 showStep: (step) => showStep(step),
                 
-                // Recherche
+                // Recherche UNIFORME
                 performSearch: () => performSearch(),
                 
                 // Configuration
@@ -1988,7 +2000,7 @@
                 closeAllModals: () => closeAllModals(),
                 debugModals: window.debugModals,
                 
-                // Contact
+                // Contact UNIFORME
                 testContact: (trainerId, trainerName) => openContactModal(trainerId, trainerName),
                 
                 // Utilitaires
@@ -2008,13 +2020,14 @@
         }
 
         // ===== INITIALISATION FINALE =====
-        console.log('✅ Trainer Registration Pro: Initialisation complète terminée');
+        console.log('✅ Trainer Registration Pro: Initialisation complète terminée - AFFICHAGE UNIFORME');
         console.log('📊 Composants initialisés:', {
             formulaire: formElements.form.length > 0,
             recherche: searchElements.trainersGrid.length > 0,
             cartes: $('.trpro-trainer-card').length,
             animations: true,
-            contactModal: 'NONCE CORRIGÉ' // ✅ Indicateur de correction
+            affichageUniforme: 'ACTIVÉ', // ✅ Indicateur principal
+            contactModal: 'NONCE CORRIGÉ'
         });
         
         // Notification de succès d'initialisation
@@ -2023,11 +2036,12 @@
         }
         
         if (searchElements.trainersGrid.length > 0) {
-            console.log('🎯 Recherche prête - Filtres et pagination activés');
+            console.log('🎯 Recherche prête - AFFICHAGE UNIFORME entre AJAX et statique');
         }
         
-        // ✅ Vérification spécifique de la correction du nonce
+        // ✅ Vérification spécifique de la correction
         console.log('🔐 Nonce de contact unifié: CORRIGÉ - Utilise trainer_ajax.nonce');
+        console.log('🎨 Affichage uniforme: ACTIVÉ - Même style pour recherche AJAX et template statique');
         
         // Vérification de la compatibilité
         const features = {
