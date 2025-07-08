@@ -1,12 +1,11 @@
 <?php
 /**
- * Classe pour la partie publique du plugin - VERSION CORRIGÉE NONCE CONTACT
+ * Classe pour la partie publique du plugin - VERSION CORRIGÉE AFFICHAGE UNIFORME
  * 
  * Fichier: includes/class-trainer-registration-public.php
- * ✅ CORRECTION: Nonce de contact unifié avec le nonce principal
- * ✅ Grille 4x3 fonctionnelle (12 formateurs par page)
+ * ✅ CORRECTION: Affichage uniforme entre recherche AJAX et affichage statique
+ * ✅ Utilise le même template pour les cartes dans tous les cas
  * ✅ Tous les filtres corrigés (spécialité, région, expérience, disponibilité)
- * ✅ Cartes compactes optimisées
  * ✅ Anonymisation maintenue
  */
 
@@ -24,9 +23,9 @@ class TrainerRegistrationPublic {
         add_action('wp_ajax_submit_trainer_registration', array($this, 'handle_trainer_registration'));
         add_action('wp_ajax_nopriv_submit_trainer_registration', array($this, 'handle_trainer_registration'));
         
-        // ✅ Handler de recherche corrigé pour grille 4x3
-        add_action('wp_ajax_search_trainers', array($this, 'handle_trainer_search_4x3'));
-        add_action('wp_ajax_nopriv_search_trainers', array($this, 'handle_trainer_search_4x3'));
+        // ✅ Handler de recherche corrigé pour affichage uniforme
+        add_action('wp_ajax_search_trainers', array($this, 'handle_trainer_search_unified'));
+        add_action('wp_ajax_nopriv_search_trainers', array($this, 'handle_trainer_search_unified'));
         
         // ✅ CORRECTION: Handler de contact avec nonce unifié
         add_action('wp_ajax_contact_trainer', array($this, 'handle_trainer_contact'));
@@ -58,7 +57,7 @@ class TrainerRegistrationPublic {
             has_shortcode($content, 'trainer_home') ||
             has_shortcode($content, 'trainer_registration_form') ||
             has_shortcode($content, 'trainer_list') ||
-            has_shortcode($content, 'trainer_list_modern') || // ✅ Ajout du nouveau shortcode
+            has_shortcode($content, 'trainer_list_modern') ||
             has_shortcode($content, 'trainer_search') ||
             has_shortcode($content, 'trainer_profile') ||
             has_shortcode($content, 'trainer_stats') ||
@@ -93,7 +92,7 @@ class TrainerRegistrationPublic {
             true
         );
         
-        // ✅ Configuration AJAX mise à jour pour grille 4x3
+        // Configuration AJAX
         wp_localize_script('trpro-public-script', 'trainer_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('trainer_registration_nonce'),
@@ -112,7 +111,7 @@ class TrainerRegistrationPublic {
                 'allowed_file_types' => array('pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'),
                 'search_delay' => 300,
                 'animation_duration' => 300,
-                'per_page' => 12 // ✅ Configuration 4x3
+                'per_page' => 12
             ),
             'regions' => array(
                 'ile-de-france' => 'Île-de-France',
@@ -136,34 +135,34 @@ class TrainerRegistrationPublic {
         ));
     }
 
-    // ===== HANDLER RECHERCHE CORRIGÉ POUR GRILLE 4x3 =====
+    // ===== HANDLER RECHERCHE CORRIGÉ POUR AFFICHAGE UNIFORME =====
 
     /**
-     * ✅ Handler AJAX pour recherche avec TOUS les filtres - Optimisé grille 4x3
+     * ✅ Handler AJAX pour recherche avec affichage uniforme comme le template statique
      */
-    public function handle_trainer_search_4x3() {
+    public function handle_trainer_search_unified() {
         // Vérification de sécurité
         if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
             wp_send_json_error(['message' => 'Erreur de sécurité']);
         }
         
         try {
-            // ✅ RÉCUPÉRATION DE TOUS LES PARAMÈTRES DE FILTRES
+            // Récupération de tous les paramètres de filtres
             $search_term = sanitize_text_field($_POST['search_term'] ?? '');
             $specialty_filter = sanitize_text_field($_POST['specialty_filter'] ?? '');
             $region_filter = sanitize_text_field($_POST['region_filter'] ?? '');
-            $experience_filter = sanitize_text_field($_POST['experience_filter'] ?? ''); // ✅ AJOUTÉ
-            $availability_filter = sanitize_text_field($_POST['availability_filter'] ?? ''); // ✅ AJOUTÉ
+            $experience_filter = sanitize_text_field($_POST['experience_filter'] ?? '');
+            $availability_filter = sanitize_text_field($_POST['availability_filter'] ?? '');
             
-            // ✅ Pagination pour grille 4x3
-            $per_page = 12; // Force 4x3 = 12 formateurs par page
+            // Pagination
+            $per_page = 12;
             $page = max(1, intval($_POST['page'] ?? 1));
             $offset = ($page - 1) * $per_page;
             
             global $wpdb;
             $table_name = $wpdb->prefix . 'trainer_registrations';
             
-            // ✅ CONSTRUCTION DE LA REQUÊTE AVEC TOUS LES FILTRES
+            // Construction de la requête avec tous les filtres
             $where_conditions = ["status = 'approved'"];
             $where_values = [];
             
@@ -181,25 +180,25 @@ class TrainerRegistrationPublic {
                 $where_values = array_merge($where_values, [$search_like, $search_like, $search_like, $search_like, $search_like, $search_like]);
             }
             
-            // ✅ Filtre par spécialité
+            // Filtre par spécialité
             if (!empty($specialty_filter)) {
                 $where_conditions[] = "specialties LIKE %s";
                 $where_values[] = '%' . $wpdb->esc_like($specialty_filter) . '%';
             }
             
-            // ✅ Filtre par région d'intervention
+            // Filtre par région d'intervention
             if (!empty($region_filter)) {
                 $where_conditions[] = "intervention_regions LIKE %s";
                 $where_values[] = '%' . $wpdb->esc_like($region_filter) . '%';
             }
             
-            // ✅ Filtre par niveau d'expérience
+            // Filtre par niveau d'expérience
             if (!empty($experience_filter)) {
                 $where_conditions[] = "experience_level = %s";
                 $where_values[] = $experience_filter;
             }
             
-            // ✅ Filtre par disponibilité
+            // Filtre par disponibilité
             if (!empty($availability_filter)) {
                 $where_conditions[] = "availability = %s";
                 $where_values[] = $availability_filter;
@@ -230,42 +229,15 @@ class TrainerRegistrationPublic {
             $prepared_query = $wpdb->prepare($results_query, $query_values);
             $trainers = $wpdb->get_results($prepared_query);
             
-            // ✅ TRAITEMENT DES RÉSULTATS AVEC ANONYMISATION
-            $processed_trainers = [];
-            $upload_dir = wp_upload_dir();
-            
-            foreach ($trainers as $trainer) {
-                // Anonymisation du nom : Première lettre du nom + point + prénom
-                $display_name = $this->get_anonymized_name($trainer->first_name, $trainer->last_name);
-                
-                $processed_trainer = [
-                    'id' => $trainer->id,
-                    'display_name' => $display_name,
-                    'company' => $trainer->company,
-                    'specialties' => $trainer->specialties,
-                    'intervention_regions' => $trainer->intervention_regions,
-                    'experience' => $trainer->experience,
-                    'experience_level' => $trainer->experience_level,
-                    'availability' => $trainer->availability,
-                    'hourly_rate' => $trainer->hourly_rate,
-                    'bio' => $trainer->bio,
-                    'linkedin_url' => $trainer->linkedin_url,
-                    'created_at' => $trainer->created_at,
-                    'photo_url' => !empty($trainer->photo_file) ? $upload_dir['baseurl'] . '/' . $trainer->photo_file : null
-                ];
-                
-                $processed_trainers[] = $processed_trainer;
-            }
-            
-            // ✅ GÉNÉRATION HTML POUR GRILLE 4x3
-            $html = $this->generate_trainers_grid_4x3_html($processed_trainers);
+            // ✅ CORRECTION: Générer le HTML uniforme comme le template statique
+            $html = $this->generate_unified_trainers_html($trainers);
             
             // Calcul de la pagination
             $total_pages = ceil($total_trainers / $per_page);
             
-            // ✅ RÉPONSE AVEC TOUTES LES DONNÉES
+            // Réponse avec toutes les données
             wp_send_json_success([
-                'trainers' => $processed_trainers,
+                'trainers' => $trainers,
                 'html' => $html,
                 'total' => intval($total_trainers),
                 'per_page' => $per_page,
@@ -283,207 +255,183 @@ class TrainerRegistrationPublic {
             ]);
             
         } catch (Exception $e) {
-            error_log('Erreur recherche formateurs 4x3: ' . $e->getMessage());
+            error_log('Erreur recherche formateurs: ' . $e->getMessage());
             wp_send_json_error(['message' => 'Erreur lors de la recherche']);
         }
     }
 
     /**
-     * ✅ Génère le HTML pour la grille 4x3 de formateurs avec cartes compactes
+     * ✅ CORRECTION PRINCIPALE: Génère le HTML uniforme identique au template statique
      */
-    private function generate_trainers_grid_4x3_html($trainers) {
+    private function generate_unified_trainers_html($trainers) {
         if (empty($trainers)) {
             return $this->get_empty_state_html();
         }
         
         $html = '';
-        $contact_email = get_option('trainer_contact_email', get_option('admin_email'));
+        $upload_dir = wp_upload_dir();
         
         foreach ($trainers as $trainer) {
-            $trainer_id_formatted = str_pad($trainer['id'], 4, '0', STR_PAD_LEFT);
-            $specialties = !empty($trainer['specialties']) ? explode(',', $trainer['specialties']) : [];
-            $regions = !empty($trainer['intervention_regions']) ? explode(',', $trainer['intervention_regions']) : [];
+            $trainer_id = str_pad($trainer->id, 4, '0', STR_PAD_LEFT);
+            $specialties = array_map('trim', explode(',', $trainer->specialties));
+            $display_specialties = array_slice($specialties, 0, 2); // Max 2 spécialités comme dans le template
+            $remaining_count = count($specialties) - 2;
             
-            // Spécialités limitées pour l'affichage compact (4 max)
-            $main_specialties = array_slice($specialties, 0, 4);
-            $remaining_specialties = count($specialties) - 4;
-            
-            // Régions limitées (2 max)
-            $main_regions = array_slice($regions, 0, 2);
-            $remaining_regions = count($regions) - 2;
-            
-            $html .= '<article class="trpro-trainer-card-modern" data-trainer-id="' . esc_attr($trainer['id']) . '">';
-            
-            // ✅ Header compact avec photo plus petite
-            $html .= '<div class="trpro-card-header">';
-            $html .= '<div class="trpro-trainer-avatar">
-    <div class="trpro-avatar-placeholder">
-        <i class="fas fa-user-graduate"></i>
-    </div>
-</div>';
-            
-            if (!empty($trainer['photo_url'])) {
-                $html .= '<img src="' . esc_url($trainer['photo_url']) . '" alt="Formateur #' . $trainer_id_formatted . '" loading="lazy">';
-            } else {
-                $html .= '<div class="trpro-avatar-placeholder"><i class="fas fa-user-graduate"></i></div>';
+            // Régions d'intervention
+            $intervention_regions = array();
+            if (!empty($trainer->intervention_regions)) {
+                $intervention_regions = array_map('trim', explode(',', $trainer->intervention_regions));
             }
             
-            $html .= '<div class="trpro-status-badge"><span>Vérifié</span></div>';
-            $html .= '</div>'; // avatar
+            // Nom anonymisé
+            $display_name = $this->get_anonymized_name($trainer->first_name, $trainer->last_name);
             
-            // Badges de vérification compacts
-            $html .= '<div class="trpro-verification-badges">';
-            $html .= '<div class="trpro-badge trpro-verified"><i class="fas fa-check-circle"></i></div>';
+            // Gestion robuste des photos
+            $photo_url = '';
+            if (!empty($trainer->photo_file)) {
+                $photo_path = $upload_dir['basedir'] . '/' . $trainer->photo_file;
+                if (file_exists($photo_path)) {
+                    $photo_url = $upload_dir['baseurl'] . '/' . $trainer->photo_file;
+                }
+            }
+            
+            // ✅ GÉNÉRATION HTML IDENTIQUE AU TEMPLATE STATIQUE
+            $html .= '<article class="trpro-trainer-card-compact" data-trainer-id="' . esc_attr($trainer->id) . '">';
+            
+            // Header avec photo et badges
+            $html .= '<div class="trpro-card-header">';
+            $html .= '<div class="trpro-trainer-avatar">';
+            $html .= '<div class="trpro-avatar-placeholder">';
+            $html .= '<i class="fas fa-user-graduate"></i>';
             $html .= '</div>';
-            $html .= '</div>'; // header
             
-            // ✅ Corps de carte compact
+            if (!empty($photo_url)) {
+                $html .= '<img src="' . esc_url($photo_url) . '" ';
+                $html .= 'alt="Photo formateur #' . $trainer_id . '" ';
+                $html .= 'loading="lazy" ';
+                $html .= 'onload="this.previousElementSibling.style.display=\'none\';" ';
+                $html .= 'onerror="this.style.display=\'none\'; this.previousElementSibling.style.display=\'flex\';">';
+            }
+            
+            $html .= '</div>'; // trainer-avatar
+            
+            // Badges de vérification
+            $html .= '<div class="trpro-status-badges">';
+            $html .= '<span class="trpro-badge trpro-verified" title="Profil vérifié">';
+            $html .= '<i class="fas fa-check-circle"></i>';
+            $html .= '</span>';
+            
+            if (!empty($trainer->cv_file)) {
+                $html .= '<span class="trpro-badge trpro-cv-available" title="CV disponible">';
+                $html .= '<i class="fas fa-file-pdf"></i>';
+                $html .= '</span>';
+            }
+            
+            $html .= '</div>'; // status-badges
+            $html .= '</div>'; // card-header
+            
+            // Corps de carte
             $html .= '<div class="trpro-card-body">';
             
-            // Identité compacte
-            $html .= '<div class="trpro-trainer-identity">';
-            $html .= '<h3 class="trpro-trainer-title">';
-            $html .= esc_html($trainer['display_name']);
-            $html .= '<span class="trpro-trainer-id">#' . $trainer_id_formatted . '</span>';
+            // Nom et ID
+            $html .= '<h3 class="trpro-trainer-name">';
+            $html .= esc_html($display_name);
+            $html .= '<span class="trpro-trainer-id">#' . $trainer_id . '</span>';
             $html .= '</h3>';
             
-            if (!empty($trainer['company'])) {
-                $html .= '<div class="trpro-trainer-company">';
+            // Entreprise
+            if (!empty($trainer->company)) {
+                $html .= '<div class="trpro-company">';
                 $html .= '<i class="fas fa-building"></i>';
-                $html .= '<span>' . esc_html($trainer['company']) . '</span>';
-                $html .= '</div>';
-            }
-            $html .= '</div>'; // identity
-            
-            // ✅ Zones d'intervention compactes
-            if (!empty($main_regions)) {
-                $html .= '<div class="trpro-intervention-zones">';
-                $html .= '<div class="trpro-zones-header"><i class="fas fa-map-marker-alt"></i><span>Zones</span></div>';
-                $html .= '<div class="trpro-zones-list">';
-                
-                foreach ($main_regions as $region) {
-                    $region_label = $this->get_region_label(trim($region));
-                    $html .= '<span class="trpro-zone-tag">' . esc_html($region_label) . '</span>';
-                }
-                
-                if ($remaining_regions > 0) {
-                    $html .= '<span class="trpro-zone-tag trpro-zone-more">+' . $remaining_regions . '</span>';
-                }
-                
-                $html .= '</div></div>'; // zones
-            }
-            
-            // ✅ Spécialités en grille 2x2 pour plus de compacité
-            if (!empty($main_specialties)) {
-                $html .= '<div class="trpro-specialties-section">';
-                $html .= '<div class="trpro-specialties-grid">';
-                
-                foreach ($main_specialties as $specialty) {
-                    $specialty = trim($specialty);
-                    if (!empty($specialty)) {
-                        $icon = $this->get_specialty_icon($specialty);
-                        $label = $this->get_specialty_label($specialty);
-                        
-                        $html .= '<div class="trpro-specialty-item">';
-                        $html .= '<i class="' . esc_attr($icon) . '"></i>';
-                        $html .= '<span>' . esc_html($label) . '</span>';
-                        $html .= '</div>';
-                    }
-                }
-                
-                if ($remaining_specialties > 0) {
-                    $html .= '<div class="trpro-specialty-item trpro-specialty-more">';
-                    $html .= '<i class="fas fa-plus"></i>';
-                    $html .= '<span>+' . $remaining_specialties . '</span>';
-                    $html .= '</div>';
-                }
-                
-                $html .= '</div></div>'; // specialties
-            }
-            
-            // ✅ Aperçu expérience très compact (2 lignes max)
-            if (!empty($trainer['experience'])) {
-                $experience_preview = wp_trim_words($trainer['experience'], 12, '...');
-                $html .= '<div class="trpro-experience-preview">';
-                $html .= '<div class="trpro-experience-text">' . esc_html($experience_preview) . '</div>';
+                $html .= esc_html($trainer->company);
                 $html .= '</div>';
             }
             
-            // ✅ Métadonnées très compactes
-            $html .= '<div class="trpro-trainer-meta">';
+            // Spécialités limitées
+            $html .= '<div class="trpro-specialties">';
+            foreach ($display_specialties as $specialty) {
+                $specialty = trim($specialty);
+                if (!empty($specialty)) {
+                    $html .= '<span class="trpro-specialty-tag">' . esc_html(ucfirst(str_replace('-', ' ', $specialty))) . '</span>';
+                }
+            }
             
-            if (!empty($trainer['availability'])) {
-                $html .= '<div class="trpro-meta-item">';
+            if ($remaining_count > 0) {
+                $html .= '<span class="trpro-specialty-tag trpro-more">+' . $remaining_count . '</span>';
+            }
+            $html .= '</div>'; // specialties
+            
+            // Zones d'intervention
+            if (!empty($intervention_regions)) {
+                $html .= '<div class="trpro-regions">';
+                $html .= '<i class="fas fa-map-marker-alt"></i>';
+                
+                $display_regions = array_slice($intervention_regions, 0, 2);
+                $region_names = array();
+                foreach ($display_regions as $region) {
+                    $region = trim($region);
+                    $region_names[] = ucwords(str_replace('-', ' ', $region));
+                }
+                $html .= esc_html(implode(', ', $region_names));
+                
+                if (count($intervention_regions) > 2) {
+                    $html .= ' <span class="trpro-more-regions">+' . (count($intervention_regions) - 2) . '</span>';
+                }
+                
+                $html .= '</div>'; // regions
+            }
+            
+            // Métadonnées compactes
+            $html .= '<div class="trpro-meta">';
+            
+            if (!empty($trainer->availability)) {
+                $html .= '<span class="trpro-meta-item">';
                 $html .= '<i class="fas fa-calendar-check"></i>';
-                $html .= '<span>' . esc_html(ucfirst(str_replace('-', ' ', $trainer['availability']))) . '</span>';
-                $html .= '</div>';
+                $html .= esc_html(ucfirst(str_replace('-', ' ', $trainer->availability)));
+                $html .= '</span>';
             }
             
-            if (!empty($trainer['hourly_rate'])) {
-                $html .= '<div class="trpro-meta-item">';
-                $html .= '<i class="fas fa-euro-sign"></i>';
-                $html .= '<span>' . esc_html($trainer['hourly_rate']) . '</span>';
-                $html .= '</div>';
-            }
-            
-            $html .= '<div class="trpro-meta-item">';
-            $html .= '<i class="fas fa-calendar-plus"></i>';
-            $html .= '<span>Inscrit ' . human_time_diff(strtotime($trainer['created_at'])) . '</span>';
-            $html .= '</div>';
+            // Masquer le tarif horaire comme dans le template
+            // Le tarif est commenté dans le template original
             
             $html .= '</div>'; // meta
-            $html .= '</div>'; // body
+            $html .= '</div>'; // card-body
             
-            // ✅ Footer compact avec boutons plus petits
+            // Footer avec actions
             $html .= '<div class="trpro-card-footer">';
-            $html .= '<div class="trpro-action-buttons">';
             
-            // Bouton contact compact
-            if (!empty($contact_email)) {
-                $subject = 'Contact formateur #' . $trainer_id_formatted;
-                $html .= '<a href="mailto:' . esc_attr($contact_email) . '?subject=' . urlencode($subject) . '" class="trpro-btn trpro-btn-primary">';
-                $html .= '<i class="fas fa-envelope"></i><span>Contact</span>';
-                $html .= '</a>';
-            }
-            
-            // Bouton profil compact
-            $html .= '<button class="trpro-btn trpro-btn-outline trpro-btn-profile" data-trainer-id="' . esc_attr($trainer['id']) . '">';
-            $html .= '<i class="fas fa-user"></i><span>Profil</span>';
+            // Bouton contact
+            $html .= '<button class="trpro-btn trpro-btn-primary trpro-btn-contact" ';
+            $html .= 'data-trainer-id="' . esc_attr($trainer->id) . '" ';
+            $html .= 'data-trainer-name="' . esc_attr($display_name) . '" ';
+            $html .= 'title="Contacter ce formateur">';
+            $html .= '<i class="fas fa-envelope"></i>';
+            $html .= 'Contact';
             $html .= '</button>';
             
-            $html .= '</div>'; // actions
+            // Bouton profil
+            $html .= '<button class="trpro-btn trpro-btn-outline trpro-btn-profile" ';
+            $html .= 'data-trainer-id="' . esc_attr($trainer->id) . '" ';
+            $html .= 'title="Voir le profil détaillé">';
+            $html .= '<i class="fas fa-user"></i>';
+            $html .= 'Profil';
+            $html .= '</button>';
             
-            // Liens supplémentaires compacts
-            if (!empty($trainer['linkedin_url'])) {
-                $html .= '<div class="trpro-additional-links">';
-                $html .= '<a href="' . esc_url($trainer['linkedin_url']) . '" target="_blank" class="trpro-social-link">';
-                $html .= '<i class="fab fa-linkedin"></i>';
-                $html .= '</a>';
-                $html .= '</div>';
-            }
-            
-            $html .= '</div>'; // footer
-            
-            // Barre de popularité compacte
-            $popularity = rand(60, 95);
-            $html .= '<div class="trpro-popularity-indicator">';
-            $html .= '<div class="trpro-popularity-bar" style="width: ' . $popularity . '%;"></div>';
-            $html .= '</div>';
-            
-            $html .= '</article>';
+            $html .= '</div>'; // card-footer
+            $html .= '</article>'; // trainer-card-compact
         }
         
         return $html;
     }
 
     /**
-     * ✅ HTML pour état vide optimisé
+     * HTML pour état vide
      */
     private function get_empty_state_html() {
         return '
-            <div class="trpro-no-results">
+            <div class="trpro-empty-state">
                 <div class="trpro-empty-icon">
-                    <i class="fas fa-search-minus"></i>
+                    <i class="fas fa-users"></i>
                 </div>
                 <h3>Aucun formateur trouvé</h3>
                 <p>Essayez de modifier vos critères de recherche ou explorez d\'autres spécialités.</p>
@@ -496,88 +444,7 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ Mapping des régions avec labels français
-     */
-    private function get_region_label($region) {
-        $region_labels = [
-            'auvergne-rhone-alpes' => 'Auvergne-Rhône-Alpes',
-            'bourgogne-franche-comte' => 'Bourgogne-Franche-Comté',
-            'bretagne' => 'Bretagne',
-            'centre-val-de-loire' => 'Centre-Val de Loire',
-            'corse' => 'Corse',
-            'grand-est' => 'Grand Est',
-            'hauts-de-france' => 'Hauts-de-France',
-            'ile-de-france' => 'Île-de-France',
-            'normandie' => 'Normandie',
-            'nouvelle-aquitaine' => 'Nouvelle-Aquitaine',
-            'occitanie' => 'Occitanie',
-            'pays-de-la-loire' => 'Pays de la Loire',
-            'provence-alpes-cote-azur' => 'Provence-Alpes-Côte d\'Azur',
-            'outre-mer' => 'DOM-TOM',
-            'europe' => 'Europe',
-            'international' => 'International',
-            'distanciel' => 'Distanciel'
-        ];
-        
-        return $region_labels[$region] ?? ucfirst(str_replace('-', ' ', $region));
-    }
-
-    /**
-     * ✅ Mapping des icônes par spécialité
-     */
-    private function get_specialty_icon($specialty) {
-        $specialty_icons = [
-            'administration-systeme' => 'fas fa-server',
-            'reseaux' => 'fas fa-network-wired',
-            'cloud' => 'fab fa-aws',
-            'devops' => 'fas fa-infinity',
-            'securite' => 'fas fa-shield-alt',
-            'telecoms' => 'fas fa-satellite-dish',
-            'developpement' => 'fas fa-code',
-            'bases-donnees' => 'fas fa-database',
-            'cybersecurite' => 'fas fa-shield-alt',
-            'pentest' => 'fas fa-bug',
-            'rgpd' => 'fas fa-gavel',
-            'data-science' => 'fas fa-chart-line',
-            'big-data' => 'fas fa-database',
-            'gestion-projet' => 'fas fa-tasks',
-            'itil' => 'fas fa-cogs',
-            'support' => 'fas fa-headset',
-            'formation' => 'fas fa-chalkboard-teacher'
-        ];
-        
-        return $specialty_icons[$specialty] ?? 'fas fa-cog';
-    }
-
-    /**
-     * ✅ Mapping des labels de spécialités (version courte pour affichage compact)
-     */
-    private function get_specialty_label($specialty) {
-        $specialty_labels = [
-            'administration-systeme' => 'Admin Sys',
-            'reseaux' => 'Réseaux',
-            'cloud' => 'Cloud',
-            'devops' => 'DevOps',
-            'securite' => 'Sécurité',
-            'telecoms' => 'Télécoms',
-            'developpement' => 'Dev',
-            'bases-donnees' => 'BDD',
-            'cybersecurite' => 'Cyber',
-            'pentest' => 'Pentest',
-            'rgpd' => 'RGPD',
-            'data-science' => 'Data Science',
-            'big-data' => 'Big Data',
-            'gestion-projet' => 'Projet',
-            'itil' => 'ITIL',
-            'support' => 'Support',
-            'formation' => 'Formation'
-        ];
-        
-        return $specialty_labels[$specialty] ?? ucfirst(str_replace('-', ' ', $specialty));
-    }
-
-    /**
-     * ✅ Générer le nom anonymisé (méthode centrale)
+     * Générer le nom anonymisé (méthode centrale)
      */
     private function get_anonymized_name($first_name, $last_name) {
         if (empty($last_name) || empty($first_name)) {
@@ -593,12 +460,15 @@ class TrainerRegistrationPublic {
      * Recherche simple (ancien handler maintenu pour compatibilité)
      */
     public function handle_trainer_search() {
-        if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
-            wp_send_json_error(array('message' => 'Security check failed'));
-        }
-        
-        // Rediriger vers le nouveau handler
-        return $this->handle_trainer_search_4x3();
+        // Rediriger vers le nouveau handler unifié
+        return $this->handle_trainer_search_unified();
+    }
+
+    /**
+     * ✅ Compatibilité avec l'ancien nom de handler
+     */
+    public function handle_trainer_search_4x3() {
+        return $this->handle_trainer_search_unified();
     }
 
     // ===== MÉTHODES HÉRITÉES (inchangées) =====
@@ -1591,10 +1461,10 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ CORRECTION HANDLER CONTACT AVEC NONCE UNIFIÉ
+     * ✅ Handler de contact avec nonce unifié
      */
     public function handle_trainer_contact() {
-        // ✅ CORRECTION: Utiliser le nonce principal au lieu de contact_nonce
+        // Utiliser le nonce principal au lieu de contact_nonce
         if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
             wp_send_json_error(array('message' => 'Vérification de sécurité échouée'));
         }
