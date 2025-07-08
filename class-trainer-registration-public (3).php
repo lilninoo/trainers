@@ -1,8 +1,9 @@
 <?php
 /**
- * Classe pour la partie publique du plugin - VERSION MISE À JOUR GRILLE 4x3
+ * Classe pour la partie publique du plugin - VERSION CORRIGÉE NONCE CONTACT
  * 
  * Fichier: includes/class-trainer-registration-public.php
+ * ✅ CORRECTION: Nonce de contact unifié avec le nonce principal
  * ✅ Grille 4x3 fonctionnelle (12 formateurs par page)
  * ✅ Tous les filtres corrigés (spécialité, région, expérience, disponibilité)
  * ✅ Cartes compactes optimisées
@@ -27,6 +28,7 @@ class TrainerRegistrationPublic {
         add_action('wp_ajax_search_trainers', array($this, 'handle_trainer_search_4x3'));
         add_action('wp_ajax_nopriv_search_trainers', array($this, 'handle_trainer_search_4x3'));
         
+        // ✅ CORRECTION: Handler de contact avec nonce unifié
         add_action('wp_ajax_contact_trainer', array($this, 'handle_trainer_contact'));
         add_action('wp_ajax_nopriv_contact_trainer', array($this, 'handle_trainer_contact'));
         
@@ -1588,9 +1590,13 @@ class TrainerRegistrationPublic {
         return $classes;
     }
 
+    /**
+     * ✅ CORRECTION HANDLER CONTACT AVEC NONCE UNIFIÉ
+     */
     public function handle_trainer_contact() {
-        if (!wp_verify_nonce($_POST['contact_nonce'], 'trainer_contact_nonce')) {
-            wp_send_json_error(array('message' => 'Security check failed'));
+        // ✅ CORRECTION: Utiliser le nonce principal au lieu de contact_nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
+            wp_send_json_error(array('message' => 'Vérification de sécurité échouée'));
         }
         
         $errors = array();
