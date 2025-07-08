@@ -1,6 +1,7 @@
 <?php
 /**
- * Template de liste moderne des formateurs - VERSION CORRIGÉE
+ * Template de liste moderne des formateurs - VERSION CORRIGÉE NONCE
+ * ✅ CORRECTION: Nonce unifié pour système de contact
  * ✅ Cartes compactes avec photos par défaut
  * ✅ Filtres experience/availability fonctionnels
  * ✅ Vue grille/liste améliorée
@@ -309,17 +310,19 @@ $current_page = $trpro_template_current_page ?? 1;
                         </div>
                     </div>
                     
-                    <!-- Actions compactes -->
+                    <!-- ✅ CORRECTION: Actions compactes avec boutons corrigés pour nonce unifié -->
                     <div class="trpro-card-footer">
                         <button class="trpro-btn trpro-btn-primary trpro-btn-contact" 
                                 data-trainer-id="<?php echo $trainer->id; ?>"
-                                data-trainer-name="<?php echo esc_attr($display_name); ?>">
+                                data-trainer-name="<?php echo esc_attr($display_name); ?>"
+                                title="Contacter ce formateur">
                             <i class="fas fa-envelope"></i>
                             Contact
                         </button>
                         
                         <button class="trpro-btn trpro-btn-outline trpro-btn-profile" 
-                                data-trainer-id="<?php echo $trainer->id; ?>">
+                                data-trainer-id="<?php echo $trainer->id; ?>"
+                                title="Voir le profil détaillé">
                             <i class="fas fa-user"></i>
                             Profil
                         </button>
@@ -383,7 +386,7 @@ $current_page = $trpro_template_current_page ?? 1;
     <?php endif; ?>
 </div>
 
-<!-- ✅ SCRIPT D'INITIALISATION SPÉCIFIQUE -->
+<!-- ✅ SCRIPT D'INITIALISATION SPÉCIFIQUE AVEC NONCE CORRIGÉ -->
 <script>
 jQuery(document).ready(function($) {
     console.log('🚀 Catalogue formateurs: Initialisation page...');
@@ -396,8 +399,39 @@ jQuery(document).ready(function($) {
         $('#trpro-trainers-grid').removeClass('trpro-view-grid').addClass('trpro-view-list');
     }
     
+    // ✅ CORRECTION: Gestionnaire des boutons contact avec nonce unifié
+    $(document).on('click', '.trpro-btn-contact', function(e) {
+        e.preventDefault();
+        console.log('📧 Bouton contact cliqué');
+        
+        const trainerId = $(this).data('trainer-id');
+        const trainerName = $(this).data('trainer-name');
+        
+        if (!trainerId || !trainerName) {
+            console.error('❌ Données manquantes:', {trainerId, trainerName});
+            return;
+        }
+        
+        console.log('📤 Données contact:', {trainerId, trainerName});
+        
+        // Utiliser la fonction globale si disponible (utilise le nonce unifié)
+        if (typeof window.openContactModal === 'function') {
+            window.openContactModal(trainerId, trainerName);
+        } else if (typeof openContactModal === 'function') {
+            openContactModal(trainerId, trainerName);
+        } else {
+            console.warn('⚠️ Fonction openContactModal non disponible - fallback email');
+            // Fallback vers email si la fonction JS n'est pas disponible
+            const contactEmail = '<?php echo esc_js(get_option("trainer_contact_email", get_option("admin_email"))); ?>';
+            const subject = `Contact formateur #${trainerId.toString().padStart(4, '0')}`;
+            const body = `Bonjour,\n\nJe souhaite entrer en contact avec le formateur ${trainerName} (#${trainerId.toString().padStart(4, '0')}).\n\nCordialement`;
+            
+            window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+    });
+    
     // Message si pas de JavaScript principal
-    if (typeof window.TrainerDebug === 'undefined') {
+    if (typeof window.trainerDebug === 'undefined') {
         console.warn('⚠️ JavaScript principal non chargé - fonctions limitées');
         
         // Fallback basique pour vue switcher
@@ -409,11 +443,13 @@ jQuery(document).ready(function($) {
             localStorage.setItem('trainer_view', view);
         });
     }
+    
+    console.log('✅ Contact buttons: NONCE CORRIGÉ - Utilise nonce unifié');
 });
 </script>
 
 <style>
-/* ===== STYLES SPÉCIFIQUES PAGE ===== */
+/* ===== STYLES SPÉCIFIQUES PAGE AVEC CORRECTIONS ===== */
 .trpro-filters-actions {
     margin-top: 1rem;
     text-align: center;
@@ -428,6 +464,41 @@ jQuery(document).ready(function($) {
 .trpro-btn-outline:hover {
     background: var(--trpro-info);
     color: white;
+}
+
+/* ✅ Styles améliorés pour boutons contact */
+.trpro-btn-contact {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.trpro-btn-contact:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.trpro-btn-contact:active {
+    transform: translateY(0);
+}
+
+/* Animation du bouton contact */
+.trpro-btn-contact:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.trpro-btn-contact:hover:before {
+    width: 100%;
+    height: 100%;
 }
 
 /* Amélioration responsive pour filtres */
@@ -447,5 +518,38 @@ jQuery(document).ready(function($) {
         font-size: 0.8125rem;
         min-width: 2rem;
     }
+    
+    .trpro-btn-contact,
+    .trpro-btn-profile {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* États de chargement pour boutons */
+.trpro-btn-contact.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.trpro-btn-contact.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Feedback visuel amélioré */
+.trpro-trainer-card-compact:hover .trpro-btn-contact {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.trpro-trainer-card-compact:hover .trpro-btn-profile {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #1e293b;
 }
 </style>
